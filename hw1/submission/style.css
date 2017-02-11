@@ -1,0 +1,7 @@
+h1 { text-align:center }
+h3 { text-align:center }
+a { text-align:center }
+div.table {
+    width:100%;
+    text-align: center; // center the content of the container
+}

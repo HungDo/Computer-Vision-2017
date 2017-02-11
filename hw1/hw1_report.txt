@@ -1,0 +1,12 @@
+CS682 HW 1 - Report
+Hung Do
+
+This homework assignment was pretty straightforward since most of the images were produced with 1 line functions; creating the magnitude images required a few more steps. 
+
+Median filter was easily implemented using cv2.medianBlur(). You can see the difference between the 5x5 and the 3x3 median filter when you look at my hair in the images, quite noticeably in the grayscale median filter images; 5x5 blurred out more of my hair than the 3x3. 
+
+For gaussian smoothing, the images became more and more blurred and sigma increased. This was also easy to implement with cv2.GaussianBlur().
+
+Getting the magnitude of the images was a bit more tricky since I had to compute the magnitude which was the square root of (df/dx)^2 + (df/dy)^2. I got df/dx and df/dy by using the Sobel derivative given using the function cv2.Sobel(). I repeated the call to the derivative function for the original, grayscale, and gaussian smoothed images.
+
+
