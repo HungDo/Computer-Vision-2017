@@ -285,29 +285,3 @@ appliedVanishingPoints = [
 # cv2.imwrite('vanishing_points_2.png', appliedVanishingPoints[2])
 # cv2.imwrite('vanishing_points_3.png', appliedVanishingPoints[3])
 # cv2.imwrite('vanishing_points_4.png', appliedVanishingPoints[4])
-
-for i in range(0, 1):
-    plt.figure(i)
-
-    # plt.subplot(231), plt.imshow(images[i])
-    # plt.title('Grayscale'), plt.xticks([]), plt.yticks([])
-    #
-    # plt.subplot(232), plt.plot(histograms[i])
-    # plt.title('Histogram')
-
-    plt.subplot(231), plt.imshow(filterApplied[i])
-    plt.title('Filtered'), plt.xticks([]), plt.yticks([])
-
-    plt.subplot(232), plt.imshow(appliedVanishingPoints[i])
-    plt.title('Vanishing Points'), plt.xticks([]), plt.yticks([])
-
-    plt.subplot(233), plt.imshow(canny[i], cmap="gray")
-    plt.title('Canny Edge'), plt.xticks([]), plt.yticks([])
-
-    plt.subplot(234), plt.imshow(houghApplied[i])
-    plt.title('Hough Transform with Lines'), plt.xticks([]), plt.yticks([])
-
-    plt.subplot(235), plt.imshow(houghPApplied[i])
-    plt.title('Probablistic Hough with Lines'), plt.xticks([]), plt.yticks([])
-
-plt.show()
