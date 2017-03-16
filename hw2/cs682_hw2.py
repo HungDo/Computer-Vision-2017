@@ -2,21 +2,6 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
-# Figure 0
-#        - peaks at 50 - 60 and ~242
-#
-# Figure 1
-#        - peaks at 50 - 125 and ~240
-#
-# Figure 2
-#        - peaks at 25, 45, 120 - 140, 240
-#
-# Figure 3
-#        - peaks at 30 - 40, 100 - 150, 240
-#
-# Figure 4
-#        - peaks at 50 - 75, 240
-
 images = [
     cv2.imread('selected/img0.jpg', cv2.COLOR_BGR2RGB),
     cv2.imread('selected/img1.jpg', cv2.COLOR_BGR2RGB),
@@ -25,15 +10,38 @@ images = [
     cv2.imread('selected/img4.jpg', cv2.COLOR_BGR2RGB)
 ]
 
+gray_imgs = [
+    cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY),
+    cv2.cvtColor(images[1], cv2.COLOR_BGR2GRAY),
+    cv2.cvtColor(images[2], cv2.COLOR_BGR2GRAY),
+    cv2.cvtColor(images[3], cv2.COLOR_BGR2GRAY),
+    cv2.cvtColor(images[4], cv2.COLOR_BGR2GRAY)
+]
+
+dx_images = [
+    cv2.Sobel(gray_imgs[0], cv2.CV_64F, 1, 0, 5),
+    cv2.Sobel(gray_imgs[1], cv2.CV_64F, 1, 0, 5),
+    cv2.Sobel(gray_imgs[2], cv2.CV_64F, 1, 0, 5),
+    cv2.Sobel(gray_imgs[3], cv2.CV_64F, 1, 0, 5),
+    cv2.Sobel(gray_imgs[4], cv2.CV_64F, 1, 0, 5)
+]
+
+dy_images = [
+    cv2.Sobel(gray_imgs[0], cv2.CV_64F, 0, 1, 5),
+    cv2.Sobel(gray_imgs[1], cv2.CV_64F, 0, 1, 5),
+    cv2.Sobel(gray_imgs[2], cv2.CV_64F, 0, 1, 5),
+    cv2.Sobel(gray_imgs[3], cv2.CV_64F, 0, 1, 5),
+    cv2.Sobel(gray_imgs[4], cv2.CV_64F, 0, 1, 5)
+]
+
 def findlines(lines, orig):
     modified = orig.copy()
     for line in lines:
         x0, y0, x1, y1 = line[0]
-        cv2.line(modified, (x0, y0), (x1, y1), (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.line(modified, (x0, y0), (x1, y1), (0, 255, 0), 3, cv2.LINE_AA)
     return modified
 
 def convert_to_xy(houghTransform):
-    lineLength = 2000
     converted = []
     for line in houghTransform:
         rho, theta = line[0]
@@ -41,15 +49,41 @@ def convert_to_xy(houghTransform):
         a = np.cos(theta)
         b = np.sin(theta)
 
-        x0 = int(a * rho)
-        y0 = int(b * rho)
+        x = int(a * rho)
+        y = int(b * rho)
 
-        pt1x = int(x0 + lineLength * (-b))
-        pt1y = int(y0 + lineLength * a)
-        pt2x = int(x0 - lineLength * (-b))
-        pt2y = int(y0 - lineLength * a)
+        # print x, y
 
-        converted.append([[pt1x, pt1y, pt2x, pt2y]])
+        x0 = int(x + 2000 * (-b))
+        y0 = int(y + 2000 * a)
+        x1 = int(x - 2000 * (-b))
+        y1 = int(y - 2000 * a)
+        # print x0, y0, x1, y1
+
+        converted.append([[x0, y0, x1, y1]])
+
+        # try:
+        #     m = (y1 - y0) / (x1 - x0)
+        #     b = y1 - (m * x1)
+        #
+        #     # x = 1200
+        #     ymax = m * 1200 + b
+        #
+        #     # x = 0
+        #     ymin = b
+        #
+        #     # y = 1600
+        #     xmax = (1600 - b)/m
+        #
+        #     # y = 0
+        #     xmin = b/m
+        #
+        #     converted.append([[xmin, ymin, xmax, ymax]])
+        #
+        #     print [xmin, ymin, xmax, ymax]
+        #     # converted.append([[x0, y0, x1, y1]])
+        # except ZeroDivisionError:
+        #     converted.append([[x0, 0, x1, 1200]])
     return converted
 
 def filter_vert_lines(houghLines):
@@ -70,65 +104,74 @@ def filter_horiz_lines(houghLines):
         filtered.append([line[0]])
     return filtered
 
-def filter_lines(houghLines):
+def gradient_filter(houghLines, imageIdx):
     lines = []
 
     # filter using gradient and orientation
 
+
     # filter vertical lines
-    filter_vert = filter_vert_lines(houghLines)
+    # filter_vert = filter_vert_lines(houghLines)
 
     # filter horizontal lines
-    filter_horiz = filter_horiz_lines(filter_vert)
+    # filter_horiz = filter_horiz_lines(filter_vert)
 
-    for line in convert_to_xy(filter_horiz):
+    for line in convert_to_xy(houghLines):
         x0, y0, x1, y1 = line[0]
 
-        if (x0 - x1) == 0:
-            continue
-
-        m0 = (y0 - y1) / (x0 - x1)
+        # dx0 = dx_images[imageIdx][x0][y0]
+        # dy0 = dy_images[imageIdx][x0][y0]
+        #
+        # dx1 = dx_images[imageIdx][x1][y1]
+        # dy1 = dy_images[imageIdx][x1][y1]
+        # print dx0/dy0, dx1/dy1
+        # if np.abs(dx0/dy0 - dx1/dy1) <
 
         lines.append([line[0]])
     return lines
 
-def find_intersects(houghlines, w, h):
+def filter_lines(houghLines, imageIdx):
+    lines = filter_vert_lines(houghLines)
+    lines = filter_horiz_lines(lines)
+    lines = gradient_filter(lines, imageIdx)
+    return lines
+
+def find_intersects(houghlines):
     intersect_pts = []
 
-    for first in houghlines:
-        for second in houghlines:
-            if first[0] == second[0]:
-                continue
+    for i in range(0, len(houghlines), 2):
+        if i + 1 >= len(houghlines):
+            continue
 
-            x00, y00, x01, y01 = first[0]
+        x00, y00, x01, y01 = houghlines[i][0]
+        x10, y10, x11, y11 = houghlines[i+1][0]
 
-            x10, y10, x11, y11 = second[0]
-
-            if (x01 - x00) == 0 or (x11 - x10) == 0:
-                continue
-
+        try:
             m0 = (y01 - y00) / (x01 - x00)
             m1 = (y11 - y10) / (x11 - x10)
 
-            if (m0 - m1) == 0 or x00 == 0 or x10 == 0:
-                continue
+            b0 = y00 - (m0 * x00)
+            b1 = y10 - (m1 * x10)
 
-            b0 = y00 - (m0 / x00)
-            b1 = y10 - (m1 / x10)
+            x_int = (b1 - b0) / (m0 - m1)
+            y_int = m0 * x_int + b0
 
-            xinter = (b1 - b0) / (m0 - m1)
-            yinter = (m0 * xinter) + b0
+            y2 = m1 * x_int + b1
 
-            if xinter >= 0 and xinter <= w and yinter >= 0 and yinter <= h:
-                # print xinter, yinter
-                intersect_pts.append((xinter, yinter))
+            intersect_pts.append((x_int, y_int))
+
+            # print x_int, y_int, y2
+        except ZeroDivisionError:
+            continue
 
     return intersect_pts
 
 def apply_vanishing_pts(image, points):
     modified = image.copy()
+
+    # print "Num of vanishing pts", len(points)
     for pt in points:
-        cv2.circle(modified, pt, 30, (255, 0, 0), 3)
+        cv2.circle(modified, pt, 30, (0, 255, 0), 3)
     return modified
 
 ksizes = [(3, 3), (5, 5), (5, 5), (5, 5), (5, 5)]
@@ -137,9 +180,6 @@ sigmas = [0, 0, 0, 0, 0]
 aperture = 3
 min_threshold = [50, 50, 50, 50, 50]
 max_threshold = [170, 170, 170, 170, 170]
-
-min_thresh_smoothed = [0,0,0,0,0]
-max_thresh_smoothed = [255,255,255,255,255]
 
 canny = [
     cv2.Canny(images[0], min_threshold[0], max_threshold[0], aperture),
@@ -151,7 +191,7 @@ canny = [
 
 rho = 1
 theta = np.pi/180
-threshold = 250
+threshold = 255
 
 houghTransform = [
     cv2.HoughLines(canny[0], rho, theta, threshold),
@@ -172,8 +212,6 @@ houghTransformP = [
     cv2.HoughLinesP(canny[4], rho, theta, threshold, min_line_length, max_line_gap)
 ]
 
-line_length = 2000
-
 houghApplied = [
     findlines(convert_to_xy(houghTransform[0]), images[0]),
     findlines(convert_to_xy(houghTransform[1]), images[1]),
@@ -190,12 +228,30 @@ houghPApplied = [
     findlines(houghTransformP[4], images[4])
 ]
 
+# cv2.imwrite("canny_img_0.png", canny[0])
+# cv2.imwrite("canny_img_1.png", canny[1])
+# cv2.imwrite("canny_img_2.png", canny[2])
+# cv2.imwrite("canny_img_3.png", canny[3])
+# cv2.imwrite("canny_img_4.png", canny[4])
+#
+# cv2.imwrite('hough_lines_0.png', houghApplied[0])
+# cv2.imwrite('hough_lines_1.png', houghApplied[1])
+# cv2.imwrite('hough_lines_2.png', houghApplied[2])
+# cv2.imwrite('hough_lines_3.png', houghApplied[3])
+# cv2.imwrite('hough_lines_4.png', houghApplied[4])
+#
+cv2.imwrite('houghp_lines_0.png', houghPApplied[0])
+cv2.imwrite('houghp_lines_1.png', houghPApplied[1])
+cv2.imwrite('houghp_lines_2.png', houghPApplied[2])
+cv2.imwrite('houghp_lines_3.png', houghPApplied[3])
+cv2.imwrite('houghp_lines_4.png', houghPApplied[4])
+
 filtered = [
-    filter_lines(houghTransform[0]),
-    filter_lines(houghTransform[1]),
-    filter_lines(houghTransform[2]),
-    filter_lines(houghTransform[3]),
-    filter_lines(houghTransform[4])
+    filter_lines(houghTransform[0], 0),
+    filter_lines(houghTransform[1], 1),
+    filter_lines(houghTransform[2], 2),
+    filter_lines(houghTransform[3], 3),
+    filter_lines(houghTransform[4], 4)
 ]
 
 filterApplied = [
@@ -207,14 +263,14 @@ filterApplied = [
 ]
 
 vanishingPoints = [
-    find_intersects(filtered[0], len(images[0][0]), len(images[0])),
-    find_intersects(filtered[1], len(images[1][0]), len(images[1])),
-    find_intersects(filtered[2], len(images[2][0]), len(images[2])),
-    find_intersects(filtered[3], len(images[3][0]), len(images[3])),
-    find_intersects(filtered[4], len(images[4][0]), len(images[4]))
+    find_intersects(filtered[0]),
+    find_intersects(filtered[1]),
+    find_intersects(filtered[2]),
+    find_intersects(filtered[3]),
+    find_intersects(filtered[4])
 ]
 
-print len(vanishingPoints[0])
+# print len(vanishingPoints[0])
 
 appliedVanishingPoints = [
     apply_vanishing_pts(filterApplied[0], vanishingPoints[0]),
@@ -224,31 +280,34 @@ appliedVanishingPoints = [
     apply_vanishing_pts(filterApplied[4], vanishingPoints[4])
 ]
 
-# for i in range(0, 1):
-#     plt.figure(i)
-#
-#     # plt.subplot(231), plt.imshow(images[i])
-#     # plt.title('Grayscale'), plt.xticks([]), plt.yticks([])
-#     #
-#     # plt.subplot(232), plt.plot(histograms[i])
-#     # plt.title('Histogram')
-#
-#     plt.subplot(231), plt.imshow(filterApplied[i])
-#     plt.title('Filtered'), plt.xticks([]), plt.yticks([])
-#
-#     plt.subplot(232), plt.imshow(appliedVanishingPoints[i])
-#     plt.title('Vanishing Points'), plt.xticks([]), plt.yticks([])
-#
-#     plt.subplot(233), plt.imshow(canny[i], cmap="gray")
-#     plt.title('Canny Edge'), plt.xticks([]), plt.yticks([])
-#
-#     plt.subplot(234), plt.imshow(houghApplied[i])
-#     plt.title('Hough Transform with Lines'), plt.xticks([]), plt.yticks([])
-#
-#     plt.subplot(235), plt.imshow(houghPApplied[i])
-#     plt.title('Probablistic Hough with Lines'), plt.xticks([]), plt.yticks([])
-#
-# plt.show()
+# cv2.imwrite('vanishing_points_0.png', appliedVanishingPoints[0])
+# cv2.imwrite('vanishing_points_1.png', appliedVanishingPoints[1])
+# cv2.imwrite('vanishing_points_2.png', appliedVanishingPoints[2])
+# cv2.imwrite('vanishing_points_3.png', appliedVanishingPoints[3])
+# cv2.imwrite('vanishing_points_4.png', appliedVanishingPoints[4])
 
+for i in range(0, 1):
+    plt.figure(i)
 
+    # plt.subplot(231), plt.imshow(images[i])
+    # plt.title('Grayscale'), plt.xticks([]), plt.yticks([])
+    #
+    # plt.subplot(232), plt.plot(histograms[i])
+    # plt.title('Histogram')
 
+    plt.subplot(231), plt.imshow(filterApplied[i])
+    plt.title('Filtered'), plt.xticks([]), plt.yticks([])
+
+    plt.subplot(232), plt.imshow(appliedVanishingPoints[i])
+    plt.title('Vanishing Points'), plt.xticks([]), plt.yticks([])
+
+    plt.subplot(233), plt.imshow(canny[i], cmap="gray")
+    plt.title('Canny Edge'), plt.xticks([]), plt.yticks([])
+
+    plt.subplot(234), plt.imshow(houghApplied[i])
+    plt.title('Hough Transform with Lines'), plt.xticks([]), plt.yticks([])
+
+    plt.subplot(235), plt.imshow(houghPApplied[i])
+    plt.title('Probablistic Hough with Lines'), plt.xticks([]), plt.yticks([])
+
+plt.show()
